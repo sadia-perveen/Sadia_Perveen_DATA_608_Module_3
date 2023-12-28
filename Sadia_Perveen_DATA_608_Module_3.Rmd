@@ -1,0 +1,58 @@
+```{r}
+library(httr)
+library(dplyr)
+library(plotly)
+```
+
+```{r}
+#Question 1
+#load mortality data
+data <- read.csv("https://raw.githubusercontent.com/charleyferrari/CUNY_DATA_608/master/module3/data/cleaned-cdc-mortality-1999-2010-2.csv")
+#filter 2010
+data_2010 <- data %>% filter(Year == 2010)
+#calculate crude mortality rate by type and state
+data_2010 <- data_2010 %>%
+  group_by(ICD.Chapter, State, .groups = 'drop') %>%  # Use .groups = 'drop' to avoid warning
+  summarize(total_deaths = sum(Deaths), total_population = sum(Population)) %>%
+  mutate(crude_mortality_rate = (total_deaths / total_population) * 1000)  # per 1,000 population for standarized comparison
+
+#create simple visual
+plot_ly(data_2010, x = ~State, y = ~crude_mortality_rate, text = ~ICD.Chapter, type = 'bar', marker = list(color = ~ICD.Chapter)) %>%
+  layout(title = "Crude Mortality Rate by Cause of Death in 2010",
+         xaxis = list(title = "State"),
+         yaxis = list(title = "Crude Mortality Rate (per 1,000 population)"),
+         showlegend = FALSE)
+```
+
+
+```{r}
+#question 2
+
+cause <- "Neoplasms"
+
+
+data_cause <- data %>%
+  filter(ICD.Chapter == cause)
+
+national_average <- data_cause %>%
+  group_by(Year) %>%
+  summarize(national_deaths = sum(Deaths), national_population = sum(Population)) %>%
+  mutate(national_rate = (national_deaths / national_population) * 1000)  
+
+
+chart <- plot_ly() %>%
+  add_lines(data = data_cause, x = ~Year, y = ~Crude.Rate, name = "State-Specific Rate", text = ~State) %>%
+  add_lines(data = national_average, x = ~Year, y = ~national_rate, name = "National Average", text = "National Average", line = list(dash = 'dash')) %>%
+  layout(title = paste("Mortality Rate Comparison for Cause:", cause),
+         xaxis = list(title = "Year"),
+         yaxis = list(title = "Crude Mortality Rate (per 1,000 population)"),
+         showlegend = TRUE)
+
+chart
+
+
+```
+
+
+
+
